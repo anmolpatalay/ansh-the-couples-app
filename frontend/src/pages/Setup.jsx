@@ -12,7 +12,6 @@ export default function Setup() {
   const [name, setName] = useState("");
   const [countryIso, setCountryIso] = useState("");
   const [city, setCity] = useState("");
-  const [cityQuery, setCityQuery] = useState("");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
@@ -23,24 +22,21 @@ export default function Setup() {
   const cityOptions = useMemo(() => {
     if (!countryIso) return [];
     const all = City.getCitiesOfCountry(countryIso) || [];
-    const q = cityQuery.trim().toLowerCase();
-    const filtered = q ? all.filter((c) => c.name.toLowerCase().includes(q)) : all;
     const unique = [];
     const seen = new Set();
-    for (const item of filtered) {
-      const key = `${item.name}|${item.stateCode || ""}`;
+    for (const item of all) {
+      const key = item.name;
       if (seen.has(key)) continue;
       seen.add(key);
       unique.push(item);
-      if (unique.length >= 200) break;
     }
+    unique.sort((a, b) => a.name.localeCompare(b.name));
     return unique;
-  }, [countryIso, cityQuery]);
+  }, [countryIso]);
 
   function onCountry(e) {
     setCountryIso(e.target.value);
     setCity("");
-    setCityQuery("");
   }
 
   function onFile(e) {
@@ -91,40 +87,30 @@ export default function Setup() {
             Name
             <input value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
-          <label>
-            Country
-            <select value={countryIso} onChange={onCountry} required>
-              <option value="">Select country</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.isoCode} value={c.isoCode}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Search city
-            <input
-              value={cityQuery}
-              onChange={(e) => setCityQuery(e.target.value)}
-              placeholder={countryIso ? "Type to filter cities" : "Select a country first"}
-              disabled={!countryIso}
-            />
-          </label>
-          <label>
-            City
-            <select value={city} onChange={(e) => setCity(e.target.value)} required disabled={!countryIso}>
-              <option value="">{countryIso ? "Select city" : "Select a country first"}</option>
-              {cityOptions.map((c) => {
-                const value = c.stateCode ? `${c.name}, ${c.stateCode}` : c.name;
-                return (
-                  <option key={`${c.name}-${c.stateCode}-${c.latitude}`} value={c.name}>
-                    {value}
+          <div className="row">
+            <label>
+              Country
+              <select value={countryIso} onChange={onCountry} required>
+                <option value="">Select country</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.isoCode} value={c.isoCode}>
+                    {c.name}
                   </option>
-                );
-              })}
-            </select>
-          </label>
+                ))}
+              </select>
+            </label>
+            <label>
+              City
+              <select value={city} onChange={(e) => setCity(e.target.value)} required disabled={!countryIso}>
+                <option value="">{countryIso ? "Select city" : "Select a country first"}</option>
+                {cityOptions.map((c) => (
+                  <option key={`${c.name}-${c.latitude}-${c.longitude}`} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <label>
             Profile picture
             <input type="file" accept="image/*" onChange={onFile} />
