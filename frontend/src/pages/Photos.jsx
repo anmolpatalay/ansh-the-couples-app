@@ -6,7 +6,7 @@ async function shrinkForUpload(file) {
   const bitmap = await createImageBitmap(file);
   const max = 1600;
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  if (scale === 1 && file.size < 400_000) return file;
+  if (scale === 1 && file.size < 400000) return file;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);

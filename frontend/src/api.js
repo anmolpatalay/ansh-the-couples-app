@@ -61,6 +61,8 @@ export function mediaUrl(path) {
   const join = path.includes("?") ? "&" : "?";
   return `${path}${join}access_token=${encodeURIComponent(token)}`;
 }
+
+export async function apiJson(path, options = {}) {
   const res = await api(path, options);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
