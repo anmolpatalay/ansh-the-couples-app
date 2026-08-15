@@ -1,12 +1,13 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../AuthContext.jsx";
+import Logo from "./Logo.jsx";
 
 export default function NavBar() {
   const { logout, user } = useAuth();
   return (
     <header className="nav">
       <NavLink to="/" className="brand">
-        ANSH
+        <Logo className="logo-nav" />
       </NavLink>
       <nav className="nav-links">
         <NavLink to="/" end>

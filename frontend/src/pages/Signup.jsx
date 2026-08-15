@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import Logo from "../components/Logo.jsx";
 import { useAuth } from "../AuthContext.jsx";
 
 export default function Signup() {
@@ -25,8 +26,8 @@ export default function Signup() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <Logo className="logo-auth" />
         <p className="eyebrow">begin together</p>
-        <h1>Join ANSH</h1>
         <p className="lede">Create your space, then invite the person who makes home feel closer.</p>
         <form onSubmit={onSubmit}>
           <label>

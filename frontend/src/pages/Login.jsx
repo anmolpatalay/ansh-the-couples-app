@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import Logo from "../components/Logo.jsx";
 import { useAuth } from "../AuthContext.jsx";
 
 export default function Login() {
@@ -25,8 +26,8 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <Logo className="logo-auth" />
         <p className="eyebrow">two cities, one sky</p>
-        <h1>ANSH</h1>
         <p className="lede">Sign in to find each other on the globe.</p>
         <form onSubmit={onSubmit}>
           <label>

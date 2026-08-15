@@ -53,9 +53,24 @@ a {
 }
 
 .brand {
-  font-size: 1.7rem;
+  display: flex;
+  align-items: center;
   text-decoration: none;
-  color: var(--ink);
+}
+
+.logo-nav {
+  height: 52px;
+  width: auto;
+  display: block;
+  border-radius: 10px;
+}
+
+.logo-auth {
+  width: min(220px, 70%);
+  height: auto;
+  display: block;
+  margin: 0 auto 12px;
+  border-radius: 16px;
 }
 
 .nav-links {
