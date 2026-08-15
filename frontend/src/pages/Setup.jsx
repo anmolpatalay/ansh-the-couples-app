@@ -7,9 +7,9 @@ import { useAuth } from "../AuthContext.jsx";
 const COUNTRIES = Country.getAllCountries().sort((a, b) => a.name.localeCompare(b.name));
 
 export default function Setup() {
-  const { reload } = useAuth();
+  const { reload, user } = useAuth();
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(user?.name || "");
   const [countryIso, setCountryIso] = useState("");
   const [city, setCity] = useState("");
   const [file, setFile] = useState(null);

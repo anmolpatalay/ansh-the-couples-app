@@ -13,7 +13,7 @@ async def connect_db() -> None:
     db = client[settings.mongodb_db]
     await client.admin.command("ping")
     try:
-        await db.users.create_index("email", unique=True)
+        await db.users.create_index("google_id", unique=True, sparse=True)
         await db.users.create_index("pair_code", unique=True, sparse=True)
         await db.refresh_tokens.create_index("token_hash", unique=True)
         await db.refresh_tokens.create_index("expires_at", expireAfterSeconds=0)

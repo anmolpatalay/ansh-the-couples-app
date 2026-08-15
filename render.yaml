@@ -17,3 +17,5 @@ services:
         value: "30"
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: "1"
+      - key: GOOGLE_CLIENT_ID
+        sync: false

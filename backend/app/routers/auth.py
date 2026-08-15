@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, status
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from jose import JWTError
 
 from app.auth import (
@@ -14,9 +16,28 @@ from app.auth import (
 from app.config import settings
 from app.database import get_db
 from app.helpers import oid
-from app.schemas import LoginIn, RefreshIn, SignupIn, TokenOut
+from app.schemas import GoogleTokenIn, LoginIn, RefreshIn, SignupIn, TokenOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+async def issue_tokens(user_id, user_oid) -> TokenOut:
+    db = get_db()
+    access = create_access_token(user_id)
+    refresh = create_refresh_token(user_id)
+    await db.refresh_tokens.insert_one(
+        {
+            "user_id": user_oid,
+            "token_hash": token_hash(refresh),
+            "expires_at": datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days),
+        }
+    )
+    return TokenOut(access_token=access, refresh_token=refresh)
+
+
+@router.get("/config")
+async def auth_config():
+    return {"google_client_id": settings.google_client_id or ""}
 
 
 @router.post("/signup", status_code=201)
@@ -29,6 +50,7 @@ async def signup(body: SignupIn):
         {
             "email": body.email.lower(),
             "password_hash": hash_password(body.password),
+            "auth_provider": "password",
             "profile_complete": False,
             "created_at": datetime.now(timezone.utc),
         }
@@ -40,22 +62,61 @@ async def signup(body: SignupIn):
 async def login(body: LoginIn):
     db = get_db()
     user = await db.users.find_one({"email": body.email.lower()})
-    if not user or not verify_password(body.password, user["password_hash"]):
+    if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-    access = create_access_token(str(user["_id"]))
-    refresh = create_refresh_token(str(user["_id"]))
-    expires = datetime.now(timezone.utc)
-    from datetime import timedelta
+    if not user.get("password_hash"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This account uses Google. Continue with Google.",
+        )
+    if not verify_password(body.password, user["password_hash"]):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    return await issue_tokens(str(user["_id"]), user["_id"])
 
-    expires = expires + timedelta(days=settings.refresh_token_expire_days)
-    await db.refresh_tokens.insert_one(
-        {
-            "user_id": user["_id"],
-            "token_hash": token_hash(refresh),
-            "expires_at": expires,
-        }
-    )
-    return TokenOut(access_token=access, refresh_token=refresh)
+
+@router.post("/google", response_model=TokenOut)
+async def google_login(body: GoogleTokenIn):
+    if not settings.google_client_id:
+        raise HTTPException(status_code=503, detail="Google sign-in is not configured")
+    try:
+        info = id_token.verify_oauth2_token(
+            body.id_token,
+            google_requests.Request(),
+            settings.google_client_id,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid Google token") from exc
+    if info.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+    email = (info.get("email") or "").lower()
+    google_id = info.get("sub")
+    if not email or not google_id:
+        raise HTTPException(status_code=401, detail="Google did not return an email")
+    db = get_db()
+    user = await db.users.find_one({"google_id": google_id}) or await db.users.find_one({"email": email})
+    if user:
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "google_id": google_id,
+                    "auth_provider": user.get("auth_provider") or "google",
+                }
+            },
+        )
+    else:
+        result = await db.users.insert_one(
+            {
+                "email": email,
+                "google_id": google_id,
+                "name": (info.get("name") or "").strip() or None,
+                "auth_provider": "google",
+                "profile_complete": False,
+                "created_at": datetime.now(timezone.utc),
+            }
+        )
+        user = await db.users.find_one({"_id": result.inserted_id})
+    return await issue_tokens(str(user["_id"]), user["_id"])
 
 
 @router.post("/refresh", response_model=TokenOut)
@@ -73,18 +134,7 @@ async def refresh(body: RefreshIn):
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     await db.refresh_tokens.delete_one({"_id": stored["_id"]})
-    access = create_access_token(user_id)
-    refresh_token = create_refresh_token(user_id)
-    from datetime import timedelta
-
-    await db.refresh_tokens.insert_one(
-        {
-            "user_id": user["_id"],
-            "token_hash": token_hash(refresh_token),
-            "expires_at": datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days),
-        }
-    )
-    return TokenOut(access_token=access, refresh_token=refresh_token)
+    return await issue_tokens(user_id, user["_id"])
 
 
 @router.post("/logout")
@@ -92,8 +142,3 @@ async def logout(body: RefreshIn):
     db = get_db()
     await db.refresh_tokens.delete_one({"token_hash": token_hash(body.refresh_token)})
     return {"ok": True}
-
-
-@router.get("/me")
-async def me_placeholder():
-    return {"hint": "Use /api/users/me with a Bearer access token"}

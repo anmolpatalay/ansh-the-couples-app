@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000,http://localhost:8000"
     ntp_host: str = "pool.ntp.org"
     max_upload_mb: int = 8
+    google_client_id: str = ""
 
     model_config = SettingsConfigDict(
         env_file=(str(ROOT / ".env"), str(BACKEND / ".env")),

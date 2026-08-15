@@ -37,6 +37,15 @@ export function AuthProvider({ children }) {
     await loadMe();
   }
 
+  async function loginWithGoogle(idToken) {
+    const data = await apiJson("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ id_token: idToken }),
+    });
+    setTokens(data.access_token, data.refresh_token);
+    await loadMe();
+  }
+
   async function signup(email, password) {
     await apiJson("/api/auth/signup", {
       method: "POST",
@@ -62,7 +71,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = useMemo(
-    () => ({ user, setUser, loading, login, signup, logout, reload: loadMe }),
+    () => ({ user, setUser, loading, login, signup, loginWithGoogle, logout, reload: loadMe }),
     [user, loading]
   );
 

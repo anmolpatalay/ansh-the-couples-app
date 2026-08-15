@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo.jsx";
+import GoogleButton from "../components/GoogleButton.jsx";
 import { useAuth } from "../AuthContext.jsx";
 
 export default function Login() {
@@ -43,6 +44,8 @@ export default function Login() {
             {busy ? "Signing in…" : "Log in"}
           </button>
         </form>
+        <p className="auth-or">or</p>
+        <GoogleButton onError={setError} />
         <p className="switch">
           New here? <Link to="/signup">Create an account</Link>
         </p>

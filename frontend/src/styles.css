@@ -132,6 +132,22 @@ a {
   color: var(--muted);
 }
 
+.auth-or {
+  text-align: center;
+  color: var(--muted);
+  margin: 8px 0 2px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.google-btn {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+  margin: 4px 0 8px;
+}
+
 form {
   display: grid;
   gap: 14px;

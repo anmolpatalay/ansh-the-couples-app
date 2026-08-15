@@ -24,6 +24,10 @@ class RefreshIn(BaseModel):
     refresh_token: str
 
 
+class GoogleTokenIn(BaseModel):
+    id_token: str
+
+
 class ProfileSetupIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     city: str = Field(min_length=1, max_length=80)
