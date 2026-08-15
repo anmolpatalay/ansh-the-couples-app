@@ -54,7 +54,13 @@ export async function api(path, options = {}) {
   return res;
 }
 
-export async function apiJson(path, options = {}) {
+export function mediaUrl(path) {
+  if (!path) return "";
+  const token = getAccess();
+  if (!token) return path;
+  const join = path.includes("?") ? "&" : "?";
+  return `${path}${join}access_token=${encodeURIComponent(token)}`;
+}
   const res = await api(path, options);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

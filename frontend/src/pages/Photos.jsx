@@ -1,5 +1,20 @@
 import { useEffect, useState } from "react";
-import { api, apiJson } from "../api.js";
+import { api, apiJson, mediaUrl } from "../api.js";
+
+async function shrinkForUpload(file) {
+  if (!file?.type?.startsWith("image/")) return file;
+  const bitmap = await createImageBitmap(file);
+  const max = 1600;
+  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+  if (scale === 1 && file.size < 400_000) return file;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+  if (!blob) return file;
+  return new File([blob], "photo.jpg", { type: "image/jpeg" });
+}
 
 export default function Photos() {
   const [photos, setPhotos] = useState([]);
@@ -20,27 +35,11 @@ export default function Photos() {
 
   async function load() {
     const data = await apiJson("/api/photos");
-    const withBlobs = await Promise.all(
-      data.photos.map(async (p) => {
-        const res = await api(p.url);
-        const blob = await res.blob();
-        return { ...p, blobUrl: URL.createObjectURL(blob) };
-      })
-    );
-    setPhotos((prev) => {
-      prev.forEach((p) => p.blobUrl && URL.revokeObjectURL(p.blobUrl));
-      return withBlobs;
-    });
+    setPhotos(data.photos);
   }
 
   useEffect(() => {
     load().catch((err) => setError(err.message));
-    return () => {
-      setPhotos((prev) => {
-        prev.forEach((p) => p.blobUrl && URL.revokeObjectURL(p.blobUrl));
-        return [];
-      });
-    };
   }, []);
 
   async function add(e) {
@@ -49,8 +48,9 @@ export default function Photos() {
     setBusy(true);
     setError("");
     try {
+      const packed = await shrinkForUpload(file);
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", packed);
       form.append("note", note);
       const res = await api("/api/photos", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
@@ -58,7 +58,7 @@ export default function Photos() {
       setFile(null);
       setNote("");
       e.target.reset();
-      await load();
+      setPhotos((prev) => [data, ...prev]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -68,7 +68,8 @@ export default function Photos() {
 
   async function remove(id) {
     await apiJson(`/api/photos/${id}`, { method: "DELETE" });
-    await load();
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+    if (open?.id === id) setOpen(null);
   }
 
   return (
@@ -97,7 +98,7 @@ export default function Photos() {
         {photos.map((p) => (
           <figure key={p.id} className="photo-card">
             <button type="button" className="photo-thumb" onClick={() => setOpen(p)}>
-              <img src={p.blobUrl} alt={p.note || "Us"} />
+              <img src={mediaUrl(p.thumb_url || p.url)} alt={p.note || "Us"} />
             </button>
             {p.note ? <figcaption>{p.note}</figcaption> : null}
             <button type="button" className="ghost danger" onClick={() => remove(p.id)}>
@@ -113,7 +114,7 @@ export default function Photos() {
             Close
           </button>
           <img
-            src={open.blobUrl}
+            src={mediaUrl(open.url)}
             alt={open.note || "Us"}
             onClick={(e) => e.stopPropagation()}
           />

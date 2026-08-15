@@ -13,4 +13,4 @@ timezonefinder
 tzdata
 geopy
 httpx
-python-dotenv
+pillow
