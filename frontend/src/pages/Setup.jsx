@@ -1,18 +1,47 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { City, Country } from "country-state-city";
 import { useNavigate } from "react-router-dom";
 import { api, apiJson } from "../api.js";
 import { useAuth } from "../AuthContext.jsx";
+
+const COUNTRIES = Country.getAllCountries().sort((a, b) => a.name.localeCompare(b.name));
 
 export default function Setup() {
   const { reload } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
+  const [countryIso, setCountryIso] = useState("");
   const [city, setCity] = useState("");
-  const [country, setCountry] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const countryName = COUNTRIES.find((c) => c.isoCode === countryIso)?.name || "";
+
+  const cityOptions = useMemo(() => {
+    if (!countryIso) return [];
+    const all = City.getCitiesOfCountry(countryIso) || [];
+    const q = cityQuery.trim().toLowerCase();
+    const filtered = q ? all.filter((c) => c.name.toLowerCase().includes(q)) : all;
+    const unique = [];
+    const seen = new Set();
+    for (const item of filtered) {
+      const key = `${item.name}|${item.stateCode || ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(item);
+      if (unique.length >= 200) break;
+    }
+    return unique;
+  }, [countryIso, cityQuery]);
+
+  function onCountry(e) {
+    setCountryIso(e.target.value);
+    setCity("");
+    setCityQuery("");
+  }
 
   function onFile(e) {
     const chosen = e.target.files?.[0];
@@ -23,11 +52,15 @@ export default function Setup() {
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
+    if (!countryIso || !city) {
+      setError("Select a country, then a city.");
+      return;
+    }
     setBusy(true);
     try {
       await apiJson("/api/users/setup", {
         method: "POST",
-        body: JSON.stringify({ name, city, country }),
+        body: JSON.stringify({ name, city, country: countryName }),
       });
       if (file) {
         const form = new FormData();
@@ -52,22 +85,46 @@ export default function Setup() {
       <div className="auth-card wide">
         <p className="eyebrow">first login</p>
         <h1>Tell ANSH who you are</h1>
-        <p className="lede">Your city places you on the globe. Your pair code appears after this.</p>
+        <p className="lede">Pick your country first, then your city, so we can place you on the globe.</p>
         <form onSubmit={onSubmit}>
           <label>
             Name
             <input value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
-          <div className="row">
-            <label>
-              City
-              <input value={city} onChange={(e) => setCity(e.target.value)} required />
-            </label>
-            <label>
-              Country
-              <input value={country} onChange={(e) => setCountry(e.target.value)} required />
-            </label>
-          </div>
+          <label>
+            Country
+            <select value={countryIso} onChange={onCountry} required>
+              <option value="">Select country</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.isoCode} value={c.isoCode}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Search city
+            <input
+              value={cityQuery}
+              onChange={(e) => setCityQuery(e.target.value)}
+              placeholder={countryIso ? "Type to filter cities" : "Select a country first"}
+              disabled={!countryIso}
+            />
+          </label>
+          <label>
+            City
+            <select value={city} onChange={(e) => setCity(e.target.value)} required disabled={!countryIso}>
+              <option value="">{countryIso ? "Select city" : "Select a country first"}</option>
+              {cityOptions.map((c) => {
+                const value = c.stateCode ? `${c.name}, ${c.stateCode}` : c.name;
+                return (
+                  <option key={`${c.name}-${c.stateCode}-${c.latitude}`} value={c.name}>
+                    {value}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
           <label>
             Profile picture
             <input type="file" accept="image/*" onChange={onFile} />

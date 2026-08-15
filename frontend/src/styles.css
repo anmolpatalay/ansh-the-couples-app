@@ -145,17 +145,28 @@ label {
 
 input,
 textarea,
+select,
 button {
   font: inherit;
 }
 
 input,
-textarea {
+textarea,
+select {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--line);
   color: var(--ink);
   border-radius: 12px;
   padding: 11px 12px;
+}
+
+select {
+  appearance: auto;
+}
+
+select:disabled,
+input:disabled {
+  opacity: 0.55;
 }
 
 button {

@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ["three", "react-globe.gl", "globe.gl"],
+    include: ["three", "react-globe.gl", "globe.gl", "country-state-city"],
   },
   build: {
     outDir: "../backend/static",
