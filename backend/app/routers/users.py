@@ -80,4 +80,8 @@ async def get_picture(user_id: str):
     data, content_type = await load_bytes(user["profile_picture_id"])
     if data is None:
         raise HTTPException(status_code=404, detail="No picture")
-    return Response(content=data, media_type=content_type)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )

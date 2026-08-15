@@ -63,9 +63,12 @@ function latLngToVector(lat, lng, radius = 1.02) {
   );
 }
 
-export default function GlobeCanvas({ pins, width, height }) {
+export default function GlobeCanvas({ pins, timesById, width, height }) {
   const wrapRef = useRef(null);
   const overlayRef = useRef(null);
+  const timesRef = useRef(timesById);
+  timesRef.current = timesById;
+  const layoutKey = (pins || []).map((p) => `${p.user_id}:${p.lat}:${p.lng}:${p.picture_url}`).join("|");
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -224,7 +227,7 @@ export default function GlobeCanvas({ pins, width, height }) {
         const em = document.createElement("em");
         em.textContent = `${pin.city || ""}, ${pin.country || ""}`;
         const time = document.createElement("span");
-        time.textContent = pin.local_time || "";
+        time.textContent = timesRef.current?.[pin.user_id] || "";
         label.append(strong, em, time);
         el.append(photo, label);
         overlay.appendChild(el);
@@ -257,7 +260,7 @@ export default function GlobeCanvas({ pins, width, height }) {
       renderer.dispose();
       if (renderer.domElement.parentNode === wrap) wrap.removeChild(renderer.domElement);
     };
-  }, [pins, width, height]);
+  }, [layoutKey, width, height, pins]);
 
   return (
     <div ref={wrapRef} className="globe-canvas">

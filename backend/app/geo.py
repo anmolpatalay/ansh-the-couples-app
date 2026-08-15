@@ -75,14 +75,8 @@ def ntp_utc() -> datetime:
         return datetime.now(timezone.utc)
 
 
-def local_time_iso(tz_name: str, lat: float | None = None, lng: float | None = None) -> tuple[str, str]:
-    if lat is not None and lng is not None:
-        tz_name = timezone_for_coords(lat, lng)
-    utc_now = ntp_utc()
-    local = utc_now.astimezone(zoneinfo_of(tz_name))
-    stamp = local.strftime("%Y-%m-%d %H:%M:%S")
-    abbr = local.tzname() or tz_name
-    return f"{stamp} {abbr}", tz_name
+def ntp_utc_ms() -> int:
+    return int(ntp_utc().timestamp() * 1000)
 
 
 @lru_cache(maxsize=256)

@@ -1,36 +1,71 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiJson } from "../api.js";
+import { formatInZone } from "../clock.js";
 import GlobeCanvas from "../components/GlobeCanvas.jsx";
+
+const NTP_EVERY_MS = 15 * 60 * 1000;
 
 export default function Home() {
   const [map, setMap] = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const [error, setError] = useState("");
   const [size, setSize] = useState({
     w: window.innerWidth,
     h: Math.max(window.innerHeight - 72, 420),
   });
 
-  const load = useCallback(async () => {
-    try {
-      const data = await apiJson("/api/home/map");
-      setMap(data);
-      setError("");
-    } catch (err) {
-      setError(err.message);
-    }
+  const applyNtp = useCallback((ntpUtcMs) => {
+    setOffset(ntpUtcMs - Date.now());
   }, []);
 
+  const loadMap = useCallback(async () => {
+    const data = await apiJson("/api/home/map");
+    setMap(data);
+    if (data.ntp_utc_ms) applyNtp(data.ntp_utc_ms);
+  }, [applyNtp]);
+
   useEffect(() => {
-    load();
-    const t = setInterval(load, 30000);
+    loadMap().catch((err) => setError(err.message));
+
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    const ntp = setInterval(() => {
+      apiJson("/api/home/clock")
+        .then((data) => applyNtp(data.ntp_utc_ms))
+        .catch(() => {});
+    }, NTP_EVERY_MS);
     const onResize = () =>
       setSize({ w: window.innerWidth, h: Math.max(window.innerHeight - 72, 420) });
     window.addEventListener("resize", onResize);
     return () => {
-      clearInterval(t);
+      clearInterval(tick);
+      clearInterval(ntp);
       window.removeEventListener("resize", onResize);
     };
-  }, [load]);
+  }, [loadMap, applyNtp]);
+
+  const correctedNow = now + offset;
+  const timesById = useMemo(() => {
+    const times = {};
+    (map?.pins || []).forEach((p) => {
+      times[p.user_id] = formatInZone(correctedNow, p.timezone);
+    });
+    return times;
+  }, [map, correctedNow]);
+
+  const globePins = useMemo(
+    () =>
+      (map?.pins || []).map((p) => ({
+        user_id: p.user_id,
+        name: p.name,
+        city: p.city,
+        country: p.country,
+        lat: p.lat,
+        lng: p.lng,
+        picture_url: p.picture_url,
+      })),
+    [map]
+  );
 
   return (
     <div className="globe-page">
@@ -61,13 +96,15 @@ export default function Home() {
               <em>
                 {p.city}, {p.country}
               </em>
-              <span>{p.local_time}</span>
+              <span>{timesById[p.user_id] || p.local_time}</span>
             </div>
           </article>
         ))}
       </div>
 
-      {map?.pins?.length ? <GlobeCanvas pins={map.pins} width={size.w} height={size.h} /> : null}
+      {globePins.length ? (
+        <GlobeCanvas pins={globePins} timesById={timesById} width={size.w} height={size.h} />
+      ) : null}
       <p className="globe-hint">Drag to spin. Scroll or pinch to zoom.</p>
     </div>
   );
