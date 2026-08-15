@@ -162,11 +162,24 @@ select {
 
 select {
   appearance: auto;
+  color-scheme: dark;
+}
+
+option {
+  background-color: #12182a;
+  color: #f7efe4;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #c9b8a6;
+  opacity: 1;
 }
 
 select:disabled,
 input:disabled {
-  opacity: 0.55;
+  opacity: 1;
+  color: #c9b8a6;
 }
 
 button {
