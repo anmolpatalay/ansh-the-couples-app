@@ -1,0 +1,13 @@
+.git
+.env
+node_modules
+frontend/node_modules
+backend/__pycache__
+backend/app/__pycache__
+backend/static
+**/__pycache__
+*.pyc
+.venv
+venv
+dist
+.DS_Store
