@@ -119,6 +119,12 @@ export default function Home() {
             </div>
           </article>
         ))}
+        {map?.distance_km != null && (
+          <article className="pin-card distance-card">
+            <strong>{Number(map.distance_km).toLocaleString()} km</strong>
+            <em>between you</em>
+          </article>
+        )}
       </div>
 
       {globePins.length ? (

@@ -3,6 +3,7 @@ from functools import lru_cache
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import ntplib
+from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 
@@ -15,6 +16,10 @@ except ImportError:
 
 _tf = TimezoneFinder()
 _geocoder = Nominatim(user_agent="ansh-couples-app", timeout=10)
+
+
+def geodesic_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    return round(geodesic((lat1, lng1), (lat2, lng2)).km, 1)
 
 TZ_ALIASES = {
     "Asia/Calcutta": "Asia/Kolkata",

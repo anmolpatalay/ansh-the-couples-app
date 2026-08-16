@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db
 from app.deps import require_paired
-from app.geo import ntp_utc, ntp_utc_ms, timezone_for_coords, zoneinfo_of
+from app.geo import geodesic_km, ntp_utc, ntp_utc_ms, timezone_for_coords, zoneinfo_of
 from app.helpers import couple_key
 from app.routers.calendar import upcoming_reminders, _serialize as serialize_event
 
@@ -42,9 +42,11 @@ async def home_map(user=Depends(require_paired)):
     events = []
     async for doc in db.calendar_events.find({"couple_key": key}):
         events.append(serialize_event(doc))
+    pins = [pin_for(user, utc_now), pin_for(partner, utc_now)]
     return {
         "ntp_utc_ms": int(utc_now.timestamp() * 1000),
-        "pins": [pin_for(user, utc_now), pin_for(partner, utc_now)],
+        "pins": pins,
+        "distance_km": geodesic_km(pins[0]["lat"], pins[0]["lng"], pins[1]["lat"], pins[1]["lng"]),
         "reminders": upcoming_reminders(events),
     }
 

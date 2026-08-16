@@ -1,27 +1,19 @@
 # ANSH
 
-**A private space for two people who are in love and not in the same city.**
+A shared space for two people in a long-distance relationship: one map, one calendar, one photo album, paired to exactly one other account.
 
 Live app: [https://ansh-the-couples-app.onrender.com/](https://ansh-the-couples-app.onrender.com/)
 
-Render's free tier sleeps when idle. The first load can take 30-60 seconds.
+Render's free tier sleeps when idle. The first load can take 30–60 seconds.
 
-## The problem
+## What it does
 
-Long-distance is not only missing someone. It is two clocks, two maps, and no shared home screen.
+- **Pairing.** Sign up with email or Google. Set name, country, city, and photo. Share a pair code or enter theirs. Once accepted, the two accounts are linked and all shared data is scoped to that pair.
+- **Globe.** Draggable night earth. Pins show each partner's photo, local time, and distance in km. Time comes from NTP and ticks locally on the device so the globe doesn't re-render every second.
+- **Calendar.** Shared dates with emojis. Either partner can add, edit, or delete. Dates within 7 days surface as reminders.
+- **Photos.** Shared album with optional notes. Grid uses thumbnails; clicking an image loads the full-resolution version.
 
-Anniversaries live in old chats. Photos sit on one phone. "What time is it for you?" happens every evening. Social apps are built for an audience. A couple needs a two-person system: the same data, the same globe, nobody else in the room.
-
-ANSH is that system. Both people share one cloud space so the map, dates, and pictures stay in sync.
-
-## What you can do
-
-- **Find each other.** Sign up with email or Google. Set name, country, city, and photo. Share a pair code or enter theirs. After accept, you are one couple.
-- **Globe.** Draggable night earth. Pins with photos, local time, and distance in km. Time comes from NTP, then ticks on the device so the globe does not rebuild every second.
-- **Calendar.** Shared dates with emojis. Both can add, edit, and delete. Reminders show when a date is within 7 days.
-- **Us in photos.** Shared album, optional notes, click to enlarge. The grid uses thumbnails; the lightbox loads the full image.
-
-Only the paired pair can read or write that couple's calendar and photos.
+Calendar and photo data are readable/writable only by the paired accounts.
 
 ## How to use it
 
@@ -31,17 +23,15 @@ Only the paired pair can read or write that couple's calendar and photos.
 4. Copy your pair code, or enter theirs, and send a pair request.
 5. Accept on the other account. You land on the globe.
 
-To test pairing alone, use an incognito window and a second email.
+To test pairing solo, use an incognito window with a second email.
 
-## Why this stands out to recruiters
+## Design notes
 
-This is not a login form glued onto CRUD.
-
-- **Pairing is authorization.** A JWT is not enough. Calendar and media require a partner. Shared documents use `couple_key` (sorted user ids) so there is one album and one calendar, not two copies.
-- **Auth you can defend in an interview.** Bcrypt passwords. Google ID-token verification (OpenID Connect). Access JWT (30 min) plus refresh JWT (1 day), hashed in Mongo, rotated, and revocable.
-- **Time and place are backend problems.** City and country geocode to lat/lng and an IANA timezone. NTP supplies UTC. Geodesic distance is in km. The client ticks locally and resyncs NTP every 15 minutes so WebGL and avatars stay put.
-- **Media without a server disk.** Render's filesystem is ephemeral, so images live in MongoDB as BSON binaries. Uploads are compressed; thumbnails are stored separately; the browser caches `<img>` responses.
-- **One container to production.** Multi-stage Docker (Node/Vite, then Python/Uvicorn), health checks, env config, GitHub to Render.
+- **Pairing is an authorization boundary, not just a relationship.** A valid JWT alone doesn't grant access to calendar or photo endpoints — the request also has to belong to a paired user. Shared documents use a `couple_key` (sorted pair of user ids) so each couple has exactly one calendar and one album, not one per user.
+- **Auth:** bcrypt for passwords, Google ID-token verification via OpenID Connect, short-lived access JWT (30 min) plus a refresh JWT (1 day) that's hashed in Mongo, rotated, and revocable.
+- **Time/geo:** city and country are geocoded to lat/lng and an IANA timezone. NTP supplies UTC server-side; the client ticks locally and resyncs every 15 minutes so the globe and clocks don't drift or jump.
+- **Media storage:** Render's filesystem is ephemeral, so images are stored as BSON binaries in MongoDB rather than on disk. Uploads are compressed on write; thumbnails are stored separately from full images.
+- **Deployment:** multi-stage Docker build (Node/Vite for the frontend, Python/Uvicorn for the backend) into a single container, with health checks, env-based config, and GitHub → Render deploy.
 
 ## Tech stack
 
@@ -73,9 +63,9 @@ Browser  -->  FastAPI  (/api + built React SPA)
 - Calendar: `GET/POST /api/calendar`, `PUT/DELETE /api/calendar/{id}`
 - Photos: `GET/POST /api/photos`, thumb and file, `DELETE`
 
-Guards: `get_current_user` then `require_profile` then `require_paired`.
+Route guards, applied in order: `get_current_user` → `require_profile` → `require_paired`.
 
-API docs: https://ansh-the-couples-app.onrender.com/docs  
+API docs: https://ansh-the-couples-app.onrender.com/docs
 Authorize with the access JWT from login (`eyJ...`), not the pair code.
 
 ## Data (database `ansh`)
