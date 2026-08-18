@@ -15,3 +15,4 @@ geopy
 httpx
 requests
 google-auth
+PIL
