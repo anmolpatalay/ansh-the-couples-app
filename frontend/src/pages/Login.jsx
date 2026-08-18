@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import Logo from "../components/Logo.jsx";
-import GoogleButton from "../components/GoogleButton.jsx";
+import { Auth2 } from "../components/ui/Auth2.jsx";
+import Hero26Bg from "../components/ui/Hero26Bg.jsx";
 import { useAuth } from "../AuthContext.jsx";
 
 export default function Login() {
@@ -11,8 +10,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function onSubmit() {
     setError("");
     setBusy(true);
     try {
@@ -25,31 +23,20 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <Logo className="logo-auth" />
-        <p className="eyebrow">two cities, one sky</p>
-        <p className="lede">Sign in to find each other on the globe.</p>
-        <form onSubmit={onSubmit}>
-          <label>
-            Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
-          <label>
-            Password
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </label>
-          {error && <p className="error">{error}</p>}
-          <button type="submit" disabled={busy}>
-            {busy ? "Signing in…" : "Log in"}
-          </button>
-        </form>
-        <p className="auth-or">or</p>
-        <GoogleButton onError={setError} />
-        <p className="switch">
-          New here? <Link to="/signup">Create an account</Link>
-        </p>
-      </div>
+    <div className="hero26-shell">
+      <Hero26Bg />
+      <Auth2
+        heading="Welcome back"
+        subheading="Sign in to find each other on the globe."
+        submitLabel="Sign in"
+        email={email}
+        password={password}
+        onEmailChange={(e) => setEmail(e.target.value)}
+        onPasswordChange={(e) => setPassword(e.target.value)}
+        onSubmit={onSubmit}
+        busy={busy}
+        error={error}
+      />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import Logo from "../components/Logo.jsx";
-import GoogleButton from "../components/GoogleButton.jsx";
+import { Auth2 } from "../components/ui/Auth2.jsx";
+import Hero26Bg from "../components/ui/Hero26Bg.jsx";
 import { useAuth } from "../AuthContext.jsx";
 
 export default function Signup() {
@@ -11,8 +10,7 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function onSubmit(e) {
-    e.preventDefault();
+  async function onSubmit() {
     setError("");
     setBusy(true);
     try {
@@ -25,37 +23,24 @@ export default function Signup() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <Logo className="logo-auth" />
-        <p className="eyebrow">begin together</p>
-        <p className="lede">Create your space, then invite the person who makes home feel closer.</p>
-        <form onSubmit={onSubmit}>
-          <label>
-            Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
-          <label>
-            Password (min 8 characters)
-            <input
-              type="password"
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
-          {error && <p className="error">{error}</p>}
-          <button type="submit" disabled={busy}>
-            {busy ? "Creating…" : "Sign up"}
-          </button>
-        </form>
-        <p className="auth-or">or</p>
-        <GoogleButton onError={setError} />
-        <p className="switch">
-          Already have an account? <Link to="/login">Log in</Link>
-        </p>
-      </div>
+    <div className="hero26-shell">
+      <Hero26Bg />
+      <Auth2
+      heading="Create your free account"
+      subheading="Join your person on the globe — two cities, one sky."
+      submitLabel="Get started for free"
+      switchText="Already have an account?"
+      switchHref="/login"
+      switchLinkLabel="Sign in"
+      passwordHint="Use at least 8 characters with a mix of letters and numbers."
+      email={email}
+      password={password}
+      onEmailChange={(e) => setEmail(e.target.value)}
+      onPasswordChange={(e) => setPassword(e.target.value)}
+      onSubmit={onSubmit}
+      busy={busy}
+      error={error}
+    />
     </div>
   );
 }

@@ -40,12 +40,13 @@ export default function GoogleButton({ onError }) {
           },
         });
         slot.current.innerHTML = "";
+        const width = Math.min(360, Math.max(240, slot.current.parentElement?.clientWidth || 320));
         window.google.accounts.id.renderButton(slot.current, {
           theme: "filled_black",
           size: "large",
-          width: 320,
+          width,
           text: "continue_with",
-          shape: "pill",
+          shape: "rectangular",
         });
       } catch {
         /* Google not configured */

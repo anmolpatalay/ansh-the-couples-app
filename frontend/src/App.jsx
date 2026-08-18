@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import NavBar from "./components/NavBar.jsx";
@@ -9,6 +9,7 @@ import Pair from "./pages/Pair.jsx";
 import Home from "./pages/Home.jsx";
 import CalendarPage from "./pages/CalendarPage.jsx";
 import Photos from "./pages/Photos.jsx";
+import MoltenMetal from "./components/MoltenMetal.jsx";
 
 function Gate({ children, needProfile, needPair }) {
   const { user, loading } = useAuth();
@@ -30,11 +31,38 @@ function PublicOnly({ children }) {
 
 export default function App() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const showNav = user?.profile_complete && user?.paired;
+  const showMolten = showNav && pathname !== "/calendar";
 
   return (
     <div className="app-shell">
+      {showMolten && (
+        <div className="molten-bg" aria-hidden="true">
+          <MoltenMetal
+            color1="#e38aa0"
+            color2="#e8b86d"
+            color3="#f7efe4"
+            speed={0.35}
+            scale={4}
+            detail={5}
+            glow={2.4}
+            coreSize={0.1}
+            swirl={0.75}
+            fold={-0.16}
+            blackPoint={0.05}
+            brightness={1.55}
+            colorMode="molten"
+            grain
+            grainIntensity={0.05}
+            mouseInteraction
+            mouseStrength={0.25}
+            opacity={0.85}
+          />
+        </div>
+      )}
       {showNav && <NavBar />}
+      <div className="app-main">
       <Routes>
         <Route
           path="/login"
@@ -96,6 +124,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiJson } from "../api.js";
+import DarkVeil from "../components/DarkVeil.jsx";
 
 const EMOJIS = ["💕", "🌸", "✈️", "🎂", "💍", "🌙", "💌", "🫶", "🏡", "☕"];
 
@@ -89,7 +90,10 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page cal-page">
+      <div className="darkveil-bg" aria-hidden="true">
+        <DarkVeil hueShift={18} speed={0.45} warpAmount={0.35} noiseIntensity={0.04} />
+      </div>
       <div className="page-head">
         <h1>Our dates</h1>
         <p>Anniversaries, visits, birthdays — little stars on the same sky.</p>

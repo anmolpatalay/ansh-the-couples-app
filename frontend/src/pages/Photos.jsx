@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, apiJson, mediaUrl } from "../api.js";
+import DepthCarousel from "../components/DepthCarousel.jsx";
 
 async function shrinkForUpload(file) {
   if (!file?.type?.startsWith("image/")) return file;
@@ -23,6 +24,18 @@ export default function Photos() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const carouselItems = useMemo(
+    () =>
+      photos.map((p) => ({
+        image: mediaUrl(p.thumb_url || p.url),
+        alt: p.note || "Us",
+      })),
+    [photos],
+  );
+
+  const focused = photos[activeIndex] || photos[0] || null;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -59,6 +72,7 @@ export default function Photos() {
       setNote("");
       e.target.reset();
       setPhotos((prev) => [data, ...prev]);
+      setActiveIndex(0);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -70,6 +84,7 @@ export default function Photos() {
     await apiJson(`/api/photos/${id}`, { method: "DELETE" });
     setPhotos((prev) => prev.filter((p) => p.id !== id));
     if (open?.id === id) setOpen(null);
+    setActiveIndex((i) => Math.max(0, Math.min(i, photos.length - 2)));
   }
 
   return (
@@ -94,19 +109,42 @@ export default function Photos() {
       </form>
       {error && <p className="error">{error}</p>}
 
-      <div className="photo-grid">
-        {photos.map((p) => (
-          <figure key={p.id} className="photo-card">
-            <button type="button" className="photo-thumb" onClick={() => setOpen(p)}>
-              <img src={mediaUrl(p.thumb_url || p.url)} alt={p.note || "Us"} />
-            </button>
-            {p.note ? <figcaption>{p.note}</figcaption> : null}
-            <button type="button" className="ghost danger" onClick={() => remove(p.id)}>
-              Delete
-            </button>
-          </figure>
-        ))}
-      </div>
+      {photos.length === 0 ? (
+        <p className="muted">Add a photo to start a stacked album you can swipe through.</p>
+      ) : (
+        <>
+          <div className="photo-carousel-wrap">
+            <DepthCarousel
+              items={carouselItems}
+              depth={220}
+              spread={90}
+              tilt={22}
+              tiltDirection="right"
+              perspective={1400}
+              visibleCards={4}
+              falloff={0.2}
+              blur={6}
+              autoplay={photos.length > 1}
+              loop={photos.length > 1}
+              tint="#0b1020"
+              onChange={(index) => setActiveIndex(index)}
+            />
+          </div>
+          {focused ? (
+            <div className="photo-carousel-meta">
+              {focused.note ? <p>{focused.note}</p> : <p className="muted">No note on this one.</p>}
+              <div className="photo-carousel-actions">
+                <button type="button" className="ghost" onClick={() => setOpen(focused)}>
+                  View full size
+                </button>
+                <button type="button" className="ghost danger" onClick={() => remove(focused.id)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </>
+      )}
 
       {open && (
         <div className="lightbox" onClick={() => setOpen(null)} role="dialog" aria-modal="true">
