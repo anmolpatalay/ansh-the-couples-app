@@ -13,4 +13,5 @@ timezonefinder
 tzdata
 geopy
 httpx
+requests
 google-auth
